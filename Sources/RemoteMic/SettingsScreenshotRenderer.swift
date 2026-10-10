@@ -152,6 +152,15 @@ enum SettingsScreenshotRenderer {
         }
         seedStatisticsForScreenshot(settings)
         let historyDirectory = outputDirectory.appendingPathComponent(UUID().uuidString)
+        if interactive && onlySection == SettingsSection.transcripts.rawValue {
+            // Give interactive review a disposable record without accessing user history.
+            try TranscriptArchiveStore(rootDirectoryURL: historyDirectory.appendingPathComponent("transcripts"))
+                .append(TranscriptRecord(
+                    sessionID: UUID(), startedAt: Date().addingTimeInterval(-2), endedAt: Date(),
+                    applicationName: "SayAll", bundleIdentifier: "com.sayall.screenshot",
+                    source: .unknown, originalTranscript: "SayAll UI review"
+                ))
+        }
         let model = BridgeAppModel(
             settings: settings,
             commonPhraseStore: CommonPhraseStore(defaults: defaults),
@@ -183,6 +192,7 @@ enum SettingsScreenshotRenderer {
         model.membershipFeature.updateLocaleIdentifier(localization.locale.identifier)
 
         _ = NSApplication.shared
+        AppIconController().apply(settings.appIconIdentifier, source: "screenshot")
         let previousAppearance = NSApp.appearance
         NSApp.appearance = appearance
         defer { NSApp.appearance = previousAppearance }
