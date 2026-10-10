@@ -3213,7 +3213,17 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
                 ) ?? false
             },
             overrideActionPerformer: { [weak self] profileID, button, trigger in
-                self?.performButtonProfileBoundAction(
+                // HA mode must outrank the monitor's special paths (app switcher,
+                // internal actions) which never reach actionPerformer.
+                if let haWebhookURL = self?.activeHomeAssistantWebhookURL {
+                    return KeyboardInjector.send(
+                        .httpWebhook,
+                        webhookURL: haWebhookURL,
+                        webhookButton: button.rawValue,
+                        webhookGesture: trigger.rawValue
+                    )
+                }
+                return self?.performButtonProfileBoundAction(
                     profileID: profileID,
                     button: button,
                     trigger: trigger,
