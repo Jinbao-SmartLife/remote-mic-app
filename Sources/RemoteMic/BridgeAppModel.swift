@@ -3231,7 +3231,11 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
                 ) == true
             },
             hasOverrideBinding: { [weak self] profileID, button, trigger in
-                self?.macroFeature.hasActiveBinding(
+                // HA mode dispatches every gesture remotely, so the recognizer
+                // must run double-click / long-press detection for buttons that
+                // have no stored secondary binding either.
+                if self?.activeHomeAssistantWebhookURL != nil { return true }
+                return self?.macroFeature.hasActiveBinding(
                     profileID: profileID,
                     button: button,
                     trigger: trigger
