@@ -1707,7 +1707,6 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .center, spacing: 14) {
                 PageHeader(title: localization.text("button_mapping.page.title"))
-                mappingHeaderToggle
             }
             Text(localization.text("button_mapping.page.subtitle"))
                 .font(.system(size: 13))
@@ -1719,9 +1718,10 @@ struct SettingsView: View {
     private var mappingPage: some View {
         hardwareMappingPage {
             mappingModeSelector
+            mappingCanvasSection
             switch buttonMappingMode {
             case .custom:
-                mappingCanvasSection
+                EmptyView()
             case .standard:
                 defaultBindingsLegend
             case .homeAssistant:
@@ -1741,8 +1741,11 @@ struct SettingsView: View {
             selectedButton: $selectedRemoteButton,
             activeButtons: model.activeRemoteButtons,
             voiceActive: model.isStreaming,
-            actionSummary: { button, trigger in mappingActionSummary(for: button, trigger: trigger) },
+            actionSummary: { button, trigger in
+                canvasActionSummary(for: button, trigger: trigger)
+            },
             onEdit: { button, trigger in
+                guard buttonMappingMode == .custom else { return }
                 selectedRemoteButton = button
                 mappingActionFilter = .all
                 mappingEditingTarget = ShortcutEditingTarget(
@@ -1758,6 +1761,21 @@ struct SettingsView: View {
                 activeButtons: buttons,
                 isLocked: isMappingSelectionLocked
             )
+        }
+    }
+
+    private func canvasActionSummary(for button: RemoteButton, trigger: ButtonTrigger) -> String {
+        switch buttonMappingMode {
+        case .custom:
+            return mappingActionSummary(for: button, trigger: trigger)
+        case .standard:
+            if trigger == .singleClick {
+                return (AppSettings.defaultBindings[button] ?? .disabled)
+                    .displayName(using: localization)
+            }
+            return localization.text("button_mapping.action.not_set")
+        case .homeAssistant:
+            return localization.text("button_mapping.mode.ha.slot_summary")
         }
     }
 
@@ -2620,88 +2638,24 @@ struct SettingsView: View {
             }
 
             HStack(spacing: 10) {
-                Button("button_mapping.mode.ha.apply_recommended") {
-                    applyRecommendedWebhookBindings()
+                Text("button_mapping.mode.ha.all_active")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.green)
+                Spacer()
+                Button("webhook.action.test") {
+                    _ = KeyboardInjector.send(
+                        .httpWebhook,
+                        webhookURL: haWebhookURL,
+                        webhookButton: "ok",
+                        webhookGesture: "longPress"
+                    )
                 }
                 .compatibilityButtonStyle(.prominent)
                 .disabled(!isValidWebhookURL(haWebhookURL))
-                Spacer()
-            }
-            Text("button_mapping.mode.ha.recommended_note")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("button_mapping.mode.ha.single_click_warning")
-                .font(.system(size: 12))
-                .foregroundStyle(.orange)
-                .fixedSize(horizontal: false, vertical: true)
-
-            ForEach(RemoteButton.xiaomiCases) { button in
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(button.displayName(using: localization))
-                        .font(.system(size: 13, weight: .semibold))
-                    ForEach(ButtonTrigger.allCases) { trigger in
-                        homeAssistantBindingRow(button: button, trigger: trigger)
-                    }
-                    Divider()
-                        .opacity(0.4)
-                }
             }
         }
         .padding(14)
         .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    private func homeAssistantBindingRow(button: RemoteButton, trigger: ButtonTrigger) -> some View {
-        let configured = settings.configuredBaseAction(for: button, trigger: trigger)
-        let isBound = configured.action == .httpWebhook
-        return Toggle(
-            isOn: Binding(
-                get: { isBound },
-                set: { enabled in
-                    guard isValidWebhookURL(haWebhookURL) else { return }
-                    settings.setBaseBinding(
-                        enabled
-                            ? ConfiguredButtonAction(action: .httpWebhook, shortcut: nil, webhookURL: haWebhookURL)
-                            : ConfiguredButtonAction.disabled,
-                        for: button,
-                        trigger: trigger,
-                        profileID: settings.selectedRemoteProfileID
-                    )
-                }
-            )
-        ) {
-            HStack(spacing: 6) {
-                Text(trigger.displayName(using: localization))
-                    .font(.system(size: 12, weight: .medium))
-                Text(mappingActionSummary(for: button, trigger: trigger))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-        }
-        .toggleStyle(.switch)
-        .disabled(!isValidWebhookURL(haWebhookURL))
-    }
-
-    private func applyRecommendedWebhookBindings() {
-        guard isValidWebhookURL(haWebhookURL) else { return }
-        let recommended: [(RemoteButton, ButtonTrigger)] = [
-            (.ok, .longPress),
-            (.back, .longPress),
-            (.tv, .longPress),
-            (.home, .doubleClick)
-        ]
-        for (button, trigger) in recommended {
-            settings.setBaseBinding(
-                ConfiguredButtonAction(action: .httpWebhook, shortcut: nil, webhookURL: haWebhookURL),
-                for: button,
-                trigger: trigger,
-                profileID: settings.selectedRemoteProfileID
-            )
-        }
-        AppLogger.shared.write("WEBHOOK HA MODE recommended_set_applied count=\(recommended.count)")
     }
 
     private func mappingRapidPressControl(button: RemoteButton) -> some View {

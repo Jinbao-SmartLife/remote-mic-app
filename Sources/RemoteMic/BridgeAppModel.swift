@@ -6440,11 +6440,38 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
         ))
     }
 
+    /// Keys shared with SettingsView's ButtonMappingPageMode / HA mode panel.
+    private static let haModeDefaultsKey = "buttonMappingPageMode"
+    private static let haWebhookURLDefaultsKey = "haWebhookURL"
+
+    /// Non-nil when the button mapping page is in HA mode with a valid webhook
+    /// URL: every button gesture then posts to Home Assistant regardless of the
+    /// per-button bindings, so the mode acts as a global profile switch.
+    private var activeHomeAssistantWebhookURL: String? {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: Self.haModeDefaultsKey) == "homeAssistant" else { return nil }
+        let value = defaults.string(forKey: Self.haWebhookURLDefaultsKey) ?? ""
+        guard let url = URL(string: value),
+            let scheme = url.scheme?.lowercased(),
+            ["http", "https"].contains(scheme),
+            url.host != nil
+        else { return nil }
+        return value
+    }
+
     private func performExternalConfiguredAction(
         _ configured: ConfiguredButtonAction,
         button: RemoteButton? = nil,
         gesture: ButtonTrigger? = nil
     ) -> Bool {
+        if let haWebhookURL = activeHomeAssistantWebhookURL {
+            return KeyboardInjector.send(
+                .httpWebhook,
+                webhookURL: haWebhookURL,
+                webhookButton: button?.rawValue,
+                webhookGesture: gesture?.rawValue
+            )
+        }
         guard !macroFeature.hasPendingPortableImport else { return false }
         if configured.action == .combinationAction {
             return macroFeature.executeMacro(id: configured.macroID)

@@ -1260,9 +1260,8 @@
 "button_mapping.mode.default.gesture_note" = "双击 / 长按手势出厂无默认动作。";
 "button_mapping.mode.default.restore" = "恢复默认映射";
 "button_mapping.mode.default.restored" = "已恢复默认映射";
-"button_mapping.mode.ha.help" = "打开下方开关,把按键绑定到 Home Assistant Webhook:按键触发时发送携带按键与手势的 POST,由 HA 自动化按 button+gesture 分发动作。";
+"button_mapping.mode.ha.help" = "本模式生效期间,所有按键(单击 / 双击 / 长按)都会向该地址发送携带按键与手势的 POST,由 HA 自动化分发;切回「自定义按键」即恢复原有逐键映射。";
 "button_mapping.mode.ha.url_placeholder" = "http://localhost:8123/api/webhook/remote-button";
 "button_mapping.mode.ha.url_invalid" = "请先输入有效的 http(s) 地址。";
-"button_mapping.mode.ha.apply_recommended" = "应用推荐配置";
-"button_mapping.mode.ha.recommended_note" = "推荐:OK 长按 / 返回 长按 / TV 长按 / Home 双击(具体动作在 HA 端的「遥控器-按键分发」自动化里自定义)。";
-"button_mapping.mode.ha.single_click_warning" = "提示:单击通常留给编程导航,HA 控制建议用长按 / 双击。";
+"button_mapping.mode.ha.slot_summary" = "Webhook";
+"button_mapping.mode.ha.all_active" = "全部按键生效中";

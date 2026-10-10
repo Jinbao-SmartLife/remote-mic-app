@@ -1260,9 +1260,8 @@
 "button_mapping.mode.default.gesture_note" = "Double-click and long-press gestures have no stock action.";
 "button_mapping.mode.default.restore" = "Restore Default Mappings";
 "button_mapping.mode.default.restored" = "Default mappings restored";
-"button_mapping.mode.ha.help" = "Toggle the slots below to bind buttons to a Home Assistant webhook. Each press sends a POST carrying the button and gesture; the HA automation dispatches on them.";
+"button_mapping.mode.ha.help" = "While this mode is active every button gesture (single / double / long press) sends a POST carrying the button and gesture to this URL; the HA automation dispatches on them. Switch back to Custom Keys to restore per-button mappings.";
 "button_mapping.mode.ha.url_placeholder" = "http://localhost:8123/api/webhook/remote-button";
 "button_mapping.mode.ha.url_invalid" = "Enter a valid http(s) URL first.";
-"button_mapping.mode.ha.apply_recommended" = "Apply Recommended Set";
-"button_mapping.mode.ha.recommended_note" = "Recommended: OK long-press, Back long-press, TV long-press, Home double-click (actions are customized on the HA side).";
-"button_mapping.mode.ha.single_click_warning" = "Tip: keep single-click for coding navigation; long-press and double-click fit HA control better.";
+"button_mapping.mode.ha.slot_summary" = "Webhook";
+"button_mapping.mode.ha.all_active" = "All buttons are live";
