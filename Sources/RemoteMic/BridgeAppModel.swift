@@ -6459,7 +6459,8 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
         let handled = KeyboardInjector.send(
             configured.action,
             shortcut: configured.shortcut,
-            applicationProfile: applicationProfile
+            applicationProfile: applicationProfile,
+            webhookURL: configured.webhookURL
         )
         if !handled, let requestID {
             voiceInputDestinationCoordinator.cancel(requestID: requestID, reason: .actionFailed)

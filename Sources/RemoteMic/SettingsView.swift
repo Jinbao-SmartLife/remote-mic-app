@@ -1562,6 +1562,12 @@ struct SettingsView: View {
         saveMappingBinding(configured, button: button, trigger: trigger)
     }
 
+    private func setMappingWebhookURL(_ url: String?, for button: RemoteButton, trigger: ButtonTrigger) {
+        var configured = mappingConfiguration(for: button, trigger: trigger)
+        configured.webhookURL = url
+        saveMappingBinding(configured, button: button, trigger: trigger)
+    }
+
     private var mappingProfileSelector: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -2377,6 +2383,14 @@ struct SettingsView: View {
                 )
             }
 
+            if configured.action == .httpWebhook {
+                httpWebhookEditor(
+                    button: button,
+                    trigger: trigger,
+                    configured: configured
+                )
+            }
+
             if trigger == .singleClick,
                configured.action != .disabled,
                !configured.action.allowsRepeat {
@@ -2766,6 +2780,61 @@ struct SettingsView: View {
         .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
     }
 
+    private func httpWebhookEditor(
+        button: RemoteButton,
+        trigger: ButtonTrigger,
+        configured: ConfiguredButtonAction
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("webhook.editor.help")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+
+            TextField(
+                localization.text("webhook.editor.url_placeholder"),
+                text: Binding(
+                    get: { configured.webhookURL ?? "" },
+                    set: { setMappingWebhookURL($0.isEmpty ? nil : $0, for: button, trigger: trigger) }
+                )
+            )
+            .textFieldStyle(.roundedBorder)
+            .font(.system(size: 13, design: .monospaced))
+            .autocorrectionDisabled()
+
+            let currentURL = configured.webhookURL?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let currentURL, !currentURL.isEmpty, !isValidWebhookURL(currentURL) {
+                Text("webhook.editor.invalid_url")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.orange)
+            }
+
+            HStack {
+                Spacer()
+                Button("webhook.action.test") {
+                    _ = KeyboardInjector.send(
+                        .httpWebhook,
+                        webhookURL: configured.webhookURL
+                    )
+                }
+                .compatibilityButtonStyle(.prominent)
+                .disabled(!isValidWebhookURL(currentURL))
+            }
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func isValidWebhookURL(_ value: String?) -> Bool {
+        guard let value,
+            !value.isEmpty,
+            let url = URL(string: value),
+            let scheme = url.scheme?.lowercased(),
+            ["http", "https"].contains(scheme),
+            url.host != nil
+        else { return false }
+        return true
+    }
+
     private func profileSelectionButton(
         _ profile: CustomApplicationProfile,
         selected: Bool,
@@ -3055,6 +3124,9 @@ struct SettingsView: View {
             return settings.customApplicationProfile(id: configured.applicationProfileID)?.displayName
                 ?? localization.text("custom_application.not_configured")
         }
+        if configured.action == .httpWebhook {
+            return configured.webhookURL ?? localization.text("webhook.summary.not_configured")
+        }
         switch configured.action {
         case .arrowUp: return "↑"
         case .arrowDown: return "↓"
@@ -3107,6 +3179,7 @@ struct SettingsView: View {
         if action.presetApplication != nil { return "app" }
         switch action {
         case .openCommonPhrases: return "text.quote"
+        case .httpWebhook: return "paperplane"
         case .focusInput: return "scope"
         case .showDesktop: return "macwindow"
         case .appSwitcher: return "command"

@@ -189,6 +189,13 @@
 "action.previous_command_left" = "Previous Track (System Media)";
 "action.next_command_right" = "Next Track (System Media)";
 "action.custom_shortcut" = "Custom Shortcut";
+"action.http_webhook" = "HTTP Webhook";
+"webhook.editor.help" = "Sends a POST request to this URL when the button triggers. Pairs well with Home Assistant webhook automations.";
+"webhook.editor.url_placeholder" = "http://localhost:8123/api/webhook/your-hook";
+"webhook.editor.invalid_url" = "Enter a valid http(s) URL.";
+"webhook.action.test" = "Test";
+"webhook.summary.not_configured" = "No URL set";
+
 "action.focus_input" = "Focus Input Field";
 "action.open_custom_application" = "Open Custom App";
 "action.toggle_long_recording" = "Toggle Continuous Recording";

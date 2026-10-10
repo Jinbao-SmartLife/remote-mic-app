@@ -189,6 +189,13 @@
 "action.previous_command_left" = "上一首（系统媒体）";
 "action.next_command_right" = "下一首（系统媒体）";
 "action.custom_shortcut" = "自定义快捷键";
+"action.http_webhook" = "HTTP Webhook";
+"webhook.editor.help" = "按键触发时向该 URL 发送 POST 请求,可对接 Home Assistant 的 Webhook 自动化。";
+"webhook.editor.url_placeholder" = "http://localhost:8123/api/webhook/your-hook";
+"webhook.editor.invalid_url" = "请输入有效的 http(s) URL。";
+"webhook.action.test" = "测试";
+"webhook.summary.not_configured" = "未设置 URL";
+
 "action.focus_input" = "聚焦输入框";
 "action.open_custom_application" = "打开自定义 APP";
 "action.toggle_long_recording" = "切换持续录音";

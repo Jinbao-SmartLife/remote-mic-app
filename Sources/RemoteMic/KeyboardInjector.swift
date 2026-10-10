@@ -254,6 +254,8 @@ enum KeyboardInjector {
         _ action: ButtonAction,
         shortcut: CustomKeyboardShortcut? = nil,
         applicationProfile: CustomApplicationProfile? = nil,
+        webhookURL: String? = nil,
+        webhookPoster: (URL) -> Void = postWebhook,
         applicationURL: (String) -> URL? = {
             if $0 == PresetApplication.remoteMic.bundleIdentifier {
                 return Bundle.main.bundleURL
@@ -311,6 +313,19 @@ enum KeyboardInjector {
         }
         if action == .customShortcut, shortcut == nil {
             AppLogger.shared.write("SHORTCUT ACTION ignored reason=not_configured")
+            return true
+        }
+        if action == .httpWebhook {
+            guard let webhookURL,
+                let url = URL(string: webhookURL),
+                let scheme = url.scheme?.lowercased(),
+                ["http", "https"].contains(scheme)
+            else {
+                AppLogger.shared.write("WEBHOOK ACTION ignored reason=not_configured_or_invalid")
+                return true
+            }
+            AppLogger.shared.write("WEBHOOK ACTION submitted url=\(url.absoluteString)")
+            webhookPoster(url)
             return true
         }
         guard accessibilityTrusted() else { return false }
@@ -382,6 +397,8 @@ enum KeyboardInjector {
             systemKeyPoster(17)
         case .combinationAction:
             return false // The host action-library adapter owns execution.
+        case .httpWebhook:
+            break // Handled before the accessibility gate above.
         case .customShortcut:
             if let shortcut {
                 let eventFlags = shortcut.cgEventFlags
@@ -425,6 +442,26 @@ enum KeyboardInjector {
             break
         }
         return true
+    }
+
+    private static func postWebhook(_ url: URL) {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 5
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error {
+                AppLogger.shared.write(
+                    "WEBHOOK ACTION failed url=\(url.absoluteString) " +
+                        AppLogger.errorFields(error)
+                )
+            } else {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                AppLogger.shared.write(
+                    "WEBHOOK ACTION completed url=\(url.absoluteString) status=\(status)"
+                )
+            }
+        }
+        .resume()
     }
 
     private static func open(

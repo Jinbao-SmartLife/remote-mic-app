@@ -161,7 +161,8 @@ final class HIDRemoteMonitor {
                 shortcut: configured.shortcut,
                 applicationProfile: settings.customApplicationProfile(
                     id: configured.applicationProfileID
-                )
+                ),
+                webhookURL: configured.webhookURL
             )
         }
         self.overrideActionPerformer = overrideActionPerformer
