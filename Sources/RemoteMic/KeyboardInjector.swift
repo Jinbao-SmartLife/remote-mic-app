@@ -255,7 +255,9 @@ enum KeyboardInjector {
         shortcut: CustomKeyboardShortcut? = nil,
         applicationProfile: CustomApplicationProfile? = nil,
         webhookURL: String? = nil,
-        webhookPoster: (URL) -> Void = postWebhook,
+        webhookButton: String? = nil,
+        webhookGesture: String? = nil,
+        webhookPoster: (URL, Data?) -> Void = postWebhook,
         applicationURL: (String) -> URL? = {
             if $0 == PresetApplication.remoteMic.bundleIdentifier {
                 return Bundle.main.bundleURL
@@ -324,8 +326,15 @@ enum KeyboardInjector {
                 AppLogger.shared.write("WEBHOOK ACTION ignored reason=not_configured_or_invalid")
                 return true
             }
-            AppLogger.shared.write("WEBHOOK ACTION submitted url=\(url.absoluteString)")
-            webhookPoster(url)
+            var payload: [String: String] = ["source": "sayall"]
+            if let webhookButton { payload["button"] = webhookButton }
+            if let webhookGesture { payload["gesture"] = webhookGesture }
+            let body = try? JSONEncoder().encode(payload)
+            AppLogger.shared.write(
+                "WEBHOOK ACTION submitted url=\(url.absoluteString) " +
+                    "button=\(webhookButton ?? "-") gesture=\(webhookGesture ?? "-")"
+            )
+            webhookPoster(url, body)
             return true
         }
         guard accessibilityTrusted() else { return false }
@@ -444,10 +453,14 @@ enum KeyboardInjector {
         return true
     }
 
-    private static func postWebhook(_ url: URL) {
+    private static func postWebhook(_ url: URL, body: Data?) {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 5
+        if let body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         URLSession.shared.dataTask(with: request) { _, response, error in
             if let error {
                 AppLogger.shared.write(

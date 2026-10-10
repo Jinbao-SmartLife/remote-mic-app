@@ -3205,8 +3205,12 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
             excludedFingerprints: excludedFingerprints,
             eventSuppressor: hidEventSuppressor,
             ownsEventSuppressor: false,
-            actionPerformer: { [weak self] _, _, configured in
-                self?.performExternalConfiguredAction(configured) ?? false
+            actionPerformer: { [weak self] button, trigger, configured in
+                self?.performExternalConfiguredAction(
+                    configured,
+                    button: button,
+                    gesture: trigger
+                ) ?? false
             },
             overrideActionPerformer: { [weak self] profileID, button, trigger in
                 self?.performButtonProfileBoundAction(
@@ -4276,7 +4280,7 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
                 )
                 return
             }
-            guard self.performExternalConfiguredAction(current) else {
+            guard self.performExternalConfiguredAction(current, button: button, gesture: .singleClick) else {
                 self.cancelAppleRemoteRepeat(
                     for: button,
                     device: device,
@@ -4458,7 +4462,7 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
                 )
                 return false
             }
-            handled = performExternalConfiguredAction(configured)
+            handled = performExternalConfiguredAction(configured, button: button, gesture: trigger)
         }
         if handled {
             settings.recordButtonPress(
@@ -6436,7 +6440,11 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
         ))
     }
 
-    private func performExternalConfiguredAction(_ configured: ConfiguredButtonAction) -> Bool {
+    private func performExternalConfiguredAction(
+        _ configured: ConfiguredButtonAction,
+        button: RemoteButton? = nil,
+        gesture: ButtonTrigger? = nil
+    ) -> Bool {
         guard !macroFeature.hasPendingPortableImport else { return false }
         if configured.action == .combinationAction {
             return macroFeature.executeMacro(id: configured.macroID)
@@ -6460,7 +6468,9 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
             configured.action,
             shortcut: configured.shortcut,
             applicationProfile: applicationProfile,
-            webhookURL: configured.webhookURL
+            webhookURL: configured.webhookURL,
+            webhookButton: button?.rawValue,
+            webhookGesture: gesture?.rawValue
         )
         if !handled, let requestID {
             voiceInputDestinationCoordinator.cancel(requestID: requestID, reason: .actionFailed)

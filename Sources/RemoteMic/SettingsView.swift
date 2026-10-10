@@ -469,6 +469,7 @@ struct SettingsView: View {
     @State private var mappingEditingTarget: ShortcutEditingTarget?
     @State private var mappingActionFilter: MappingActionFilter = .all
     @State private var shortcutCaptureTarget: ShortcutEditingTarget?
+    @AppStorage("lastWebhookURL") private var lastWebhookURL = ""
     @State private var applicationShortcutCaptureProfileID: UUID?
     @State private var shortcutCaptureFeedback: ShortcutCaptureFeedback?
     @State private var customApplicationLearningStates: [UUID: CustomApplicationLearningState] = [:]
@@ -1547,6 +1548,12 @@ struct SettingsView: View {
     private func setMappingAction(_ action: ButtonAction, for button: RemoteButton, trigger: ButtonTrigger) {
         var configured = mappingConfiguration(for: button, trigger: trigger)
         configured.action = action
+        if action == .httpWebhook,
+            (configured.webhookURL ?? "").isEmpty,
+            !lastWebhookURL.isEmpty
+        {
+            configured.webhookURL = lastWebhookURL
+        }
         saveMappingBinding(configured, button: button, trigger: trigger)
     }
 
@@ -1565,6 +1572,9 @@ struct SettingsView: View {
     private func setMappingWebhookURL(_ url: String?, for button: RemoteButton, trigger: ButtonTrigger) {
         var configured = mappingConfiguration(for: button, trigger: trigger)
         configured.webhookURL = url
+        if let url, !url.isEmpty {
+            lastWebhookURL = url
+        }
         saveMappingBinding(configured, button: button, trigger: trigger)
     }
 
@@ -2813,7 +2823,9 @@ struct SettingsView: View {
                 Button("webhook.action.test") {
                     _ = KeyboardInjector.send(
                         .httpWebhook,
-                        webhookURL: configured.webhookURL
+                        webhookURL: configured.webhookURL,
+                        webhookButton: button.rawValue,
+                        webhookGesture: trigger.rawValue
                     )
                 }
                 .compatibilityButtonStyle(.prominent)
